@@ -67,7 +67,31 @@ struct xendrm_resp {
 	} u;
 };
 
-DEFINE_RING_TYPES(xen_drmif, struct xendrm_req,
-		struct xendrm_resp);
+struct xendrm_pg_flip_evt {
+} __packed;
+
+struct xendrm_evt {
+	union {
+		struct xendrm_event raw;
+		struct {
+			uint8_t type;
+			union {
+				struct xendrm_pg_flip_evt pg_flip;
+			} op;
+		} data;
+	} u;
+};
+
+DEFINE_RING_TYPES(xen_drmif, struct xendrm_req, struct xendrm_resp);
+
+/* shared page for back to front events */
+
+#define XENDRM_IN_RING_SIZE PAGE_SIZE
+#define XENDRM_IN_RING_LEN (XENDRM_IN_RING_SIZE / sizeof(struct xendrm_evt))
+#define XENDRM_IN_RING_OFFS (sizeof(struct xendrm_event_page))
+#define XENDRM_IN_RING(page) \
+	((struct xendrm_evt *)((char *)(page) + XENDRM_IN_RING_OFFS))
+#define XENDRM_IN_RING_REF(page, idx) \
+	(XENDRM_IN_RING((page))[(idx) % XENDRM_IN_RING_LEN])
 
 #endif /* __XEN_PUBLIC_IO_XENDRM_LINUX_H__ */

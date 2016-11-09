@@ -191,6 +191,11 @@
 #define XENDRM_OP_CLOSE                 1
 
 /*
+ * EVENT CODES.
+ */
+#define XENDRM_EVT_PG_FLIP              0
+
+/*
  * XENSTORE FIELD AND PATH NAME STRINGS, HELPERS.
  */
 #define XENDRM_DRIVER_NAME                   "vdrm"
@@ -302,6 +307,20 @@ struct xendrm_request {
 
 struct xendrm_response {
 	uint8_t raw[16];
+};
+
+struct xendrm_event {
+	uint8_t raw[16];
+};
+
+struct xendrm_event_page {
+	union {
+		uint8_t pad[16];
+		struct {
+			uint32_t in_cons;
+			uint32_t in_prod;
+		} ring;
+	} u;
 };
 
 #endif /* __XEN_PUBLIC_IO_XENDRM_H__ */
