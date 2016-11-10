@@ -25,9 +25,15 @@
 #ifndef __XEN_PUBLIC_IO_XENSND_LINUX_H__
 #define __XEN_PUBLIC_IO_XENSND_LINUX_H__
 
+#ifdef __KERNEL__
 #include <xen/interface/io/ring.h>
 #include <xen/interface/io/drmif.h>
 #include <xen/interface/grant_table.h>
+#else
+#include "drmif.h"
+#include <xen/io/ring.h>
+#include <xen/grant_table.h>
+#endif
 
 struct xendrm_open_req {
 	grant_ref_t gref_directory_start;
@@ -86,9 +92,9 @@ DEFINE_RING_TYPES(xen_drmif, struct xendrm_req, struct xendrm_resp);
 
 /* shared page for back to front events */
 
-#define XENDRM_IN_RING_SIZE PAGE_SIZE
-#define XENDRM_IN_RING_LEN (XENDRM_IN_RING_SIZE / sizeof(struct xendrm_evt))
 #define XENDRM_IN_RING_OFFS (sizeof(struct xendrm_event_page))
+#define XENDRM_IN_RING_SIZE (PAGE_SIZE - XENDRM_IN_RING_OFFS)
+#define XENDRM_IN_RING_LEN (XENDRM_IN_RING_SIZE / sizeof(struct xendrm_evt))
 #define XENDRM_IN_RING(page) \
 	((struct xendrm_evt *)((char *)(page) + XENDRM_IN_RING_OFFS))
 #define XENDRM_IN_RING_REF(page, idx) \

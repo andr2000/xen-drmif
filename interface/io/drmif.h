@@ -219,8 +219,8 @@
 #define XENDRM_RSP_OKAY                  0
 
 /* Path entries */
-#define XENSND_PATH_CARD                     "card"
-#define XENSND_PATH_CONNECTOR                "connector"
+#define XENDRM_PATH_CARD                     "card"
+#define XENDRM_PATH_CONNECTOR                "connector"
 
 /*
  * Description of the protocol between frontend and backend driver.
