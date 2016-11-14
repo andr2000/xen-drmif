@@ -219,7 +219,6 @@
 #define XENDRM_RSP_OKAY                  0
 
 /* Path entries */
-#define XENDRM_PATH_CARD                     "card"
 #define XENDRM_PATH_CONNECTOR                "connector"
 
 /*
