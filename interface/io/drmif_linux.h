@@ -48,6 +48,11 @@ struct xendrm_page_directory {
 struct xendrm_close_req {
 } __packed;
 
+struct xendrm_page_flip_req {
+	uint8_t crtc_id;
+	uint32_t fb_id;
+} __packed;
+
 struct xendrm_req {
 	union {
 		struct xendrm_request raw;
@@ -57,6 +62,7 @@ struct xendrm_req {
 			union {
 				struct xendrm_open_req open;
 				struct xendrm_close_req close;
+				struct xendrm_page_flip_req pg_flip;
 			} op;
 		} data;
 	} u;

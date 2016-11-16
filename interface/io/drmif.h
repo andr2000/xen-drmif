@@ -189,6 +189,7 @@
  */
 #define XENDRM_OP_OPEN                  0
 #define XENDRM_OP_CLOSE                 1
+#define XENDRM_OP_PG_FLIP               2
 
 /*
  * EVENT CODES.
