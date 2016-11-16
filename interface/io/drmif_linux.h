@@ -53,6 +53,10 @@ struct xendrm_page_flip_req {
 	uint32_t fb_id;
 } __packed;
 
+struct xendrm_fb_destroy_req {
+	uint32_t fb_id;
+} __packed;
+
 struct xendrm_req {
 	union {
 		struct xendrm_request raw;
@@ -63,6 +67,7 @@ struct xendrm_req {
 				struct xendrm_open_req open;
 				struct xendrm_close_req close;
 				struct xendrm_page_flip_req pg_flip;
+				struct xendrm_fb_destroy_req fb_destroy;
 			} op;
 		} data;
 	} u;
