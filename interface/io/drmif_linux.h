@@ -112,6 +112,10 @@ DEFINE_RING_TYPES(xen_drmif, struct xendrm_req, struct xendrm_resp);
 
 /* shared page for back to front events */
 
+#ifndef PAGE_SIZE
+#define PAGE_SIZE XC_PAGE_SIZE
+#endif
+
 #define XENDRM_IN_RING_OFFS (sizeof(struct xendrm_event_page))
 #define XENDRM_IN_RING_SIZE (PAGE_SIZE - XENDRM_IN_RING_OFFS)
 #define XENDRM_IN_RING_LEN (XENDRM_IN_RING_SIZE / sizeof(struct xendrm_evt))
