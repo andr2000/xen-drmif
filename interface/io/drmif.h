@@ -191,6 +191,7 @@
 #define XENDRM_OP_CLOSE                 1
 #define XENDRM_OP_PG_FLIP               2
 #define XENDRM_OP_FB_DESTROY            3
+#define XENDRM_OP_FB_CREATE             4
 
 /*
  * EVENT CODES.
