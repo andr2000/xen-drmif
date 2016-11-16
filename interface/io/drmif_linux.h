@@ -74,6 +74,7 @@ struct xendrm_resp {
 };
 
 struct xendrm_pg_flip_evt {
+	uint8_t crtc_id;
 } __packed;
 
 struct xendrm_evt {
