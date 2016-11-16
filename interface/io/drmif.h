@@ -209,9 +209,9 @@
 #define XENDRM_FIELD_CTRL_CHANNEL            "ctrl-channel"
 #define XENDRM_FIELD_EVT_RING_REF            "event-ring-ref"
 #define XENDRM_FIELD_EVT_CHANNEL             "event-channel"
-#define XENSND_FIELD_TYPE                    "type"
-#define XENSND_FIELD_ID                      "id"
-#define XENSND_FIELD_RESOLUTION              "resolution"
+#define XENDRM_FIELD_TYPE                    "type"
+#define XENDRM_FIELD_ID                      "id"
+#define XENDRM_FIELD_RESOLUTION              "resolution"
 
 /*
  * STATUS RETURN CODES.
