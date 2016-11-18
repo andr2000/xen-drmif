@@ -187,11 +187,11 @@
 /*
  * REQUEST CODES.
  */
-#define XENDRM_OP_OPEN                  0
-#define XENDRM_OP_CLOSE                 1
-#define XENDRM_OP_PG_FLIP               2
-#define XENDRM_OP_FB_CREATE             3
-#define XENDRM_OP_FB_DESTROY            4
+#define XENDRM_OP_PG_FLIP               0
+#define XENDRM_OP_FB_CREATE             1
+#define XENDRM_OP_FB_DESTROY            2
+#define XENDRM_OP_DUMB_CREATE           3
+#define XENDRM_OP_DUMB_DESTROY          4
 
 /*
  * EVENT CODES.
