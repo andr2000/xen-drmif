@@ -35,7 +35,13 @@
 #include <xen/grant_table.h>
 #endif
 
-struct xendrm_open_req {
+struct xendrm_set_config_req {
+	uint32_t x;
+	uint32_t y;
+	uint32_t width;
+	uint32_t height;
+	uint32_t bpp;
+	uint32_t fb_id;
 	grant_ref_t gref_directory_start;
 } __packed;
 
@@ -45,7 +51,7 @@ struct xendrm_page_directory {
 	grant_ref_t gref[0];
 } __packed;
 
-struct xendrm_close_req {
+struct xendrm_release_req {
 } __packed;
 
 struct xendrm_page_flip_req {
@@ -54,6 +60,7 @@ struct xendrm_page_flip_req {
 } __packed;
 
 struct xendrm_fb_create_req {
+	uint32_t handle;
 	uint32_t fb_id;
 	uint32_t width;
 	uint32_t height;
@@ -64,6 +71,17 @@ struct xendrm_fb_destroy_req {
 	uint32_t fb_id;
 } __packed;
 
+struct xendrm_dumb_create_req {
+	uint32_t height;
+	uint32_t width;
+	uint32_t bpp;
+	uint32_t handle;
+} __packed;
+
+struct xendrm_dumb_destroy_req {
+	uint32_t handle;
+} __packed;
+
 struct xendrm_req {
 	union {
 		struct xendrm_request raw;
@@ -71,11 +89,13 @@ struct xendrm_req {
 			uint16_t id;
 			uint8_t operation;
 			union {
-				struct xendrm_open_req open;
-				struct xendrm_close_req close;
 				struct xendrm_page_flip_req pg_flip;
 				struct xendrm_fb_create_req fb_create;
 				struct xendrm_fb_destroy_req fb_destroy;
+				struct xendrm_dumb_create_req dumb_create;
+				struct xendrm_dumb_destroy_req dumb_destroy;
+				struct xendrm_set_config_req set_config;
+				struct xendrm_release_req release;
 			} op;
 		} data;
 	} u;
