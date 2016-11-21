@@ -193,7 +193,6 @@
 #define XENDRM_OP_DUMB_CREATE           3
 #define XENDRM_OP_DUMB_DESTROY          4
 #define XENDRM_OP_SET_CONFIG            5
-#define XENDRM_OP_RELEASE               6
 
 /*
  * EVENT CODES.

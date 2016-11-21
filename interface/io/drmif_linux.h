@@ -42,16 +42,12 @@ struct xendrm_set_config_req {
 	uint32_t height;
 	uint32_t bpp;
 	uint32_t fb_id;
-	grant_ref_t gref_directory_start;
 } __packed;
 
 struct xendrm_page_directory {
 	grant_ref_t gref_dir_next_page;
 	uint32_t num_grefs;
 	grant_ref_t gref[0];
-} __packed;
-
-struct xendrm_release_req {
 } __packed;
 
 struct xendrm_page_flip_req {
@@ -76,6 +72,7 @@ struct xendrm_dumb_create_req {
 	uint32_t width;
 	uint32_t bpp;
 	uint32_t handle;
+	grant_ref_t gref_directory_start;
 } __packed;
 
 struct xendrm_dumb_destroy_req {
@@ -95,7 +92,6 @@ struct xendrm_req {
 				struct xendrm_dumb_create_req dumb_create;
 				struct xendrm_dumb_destroy_req dumb_destroy;
 				struct xendrm_set_config_req set_config;
-				struct xendrm_release_req release;
 			} op;
 		} data;
 	} u;
