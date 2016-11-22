@@ -68,10 +68,10 @@ struct xendrm_fb_destroy_req {
 } __packed;
 
 struct xendrm_dumb_create_req {
-	uint32_t height;
-	uint32_t width;
-	uint32_t bpp;
 	uint32_t handle;
+	uint32_t width;
+	uint32_t height;
+	uint32_t bpp;
 	grant_ref_t gref_directory_start;
 } __packed;
 
