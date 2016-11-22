@@ -51,7 +51,6 @@ struct xendrm_page_directory {
 } __packed;
 
 struct xendrm_page_flip_req {
-	uint32_t handle;
 	uint8_t crtc_id;
 	uint32_t fb_id;
 } __packed;
