@@ -36,12 +36,12 @@
 #endif
 
 struct xendrm_set_config_req {
+	uint64_t fb_cookie;
 	uint32_t x;
 	uint32_t y;
 	uint32_t width;
 	uint32_t height;
 	uint32_t bpp;
-	uint32_t fb_id;
 } __packed;
 
 struct xendrm_page_directory {
@@ -52,23 +52,23 @@ struct xendrm_page_directory {
 
 struct xendrm_page_flip_req {
 	uint8_t crtc_idx;
-	uint32_t fb_id;
+	uint64_t fb_cookie;
 } __packed;
 
 struct xendrm_fb_create_req {
-	uint32_t handle;
-	uint32_t fb_id;
+	uint64_t dumb_cookie;
+	uint64_t fb_cookie;
 	uint32_t width;
 	uint32_t height;
 	uint32_t pixel_format;
 } __packed;
 
 struct xendrm_fb_destroy_req {
-	uint32_t fb_id;
+	uint64_t fb_cookie;
 } __packed;
 
 struct xendrm_dumb_create_req {
-	uint32_t handle;
+	uint64_t dumb_cookie;
 	uint32_t width;
 	uint32_t height;
 	uint32_t bpp;
@@ -76,7 +76,7 @@ struct xendrm_dumb_create_req {
 } __packed;
 
 struct xendrm_dumb_destroy_req {
-	uint32_t handle;
+	uint64_t dumb_cookie;
 } __packed;
 
 struct xendrm_req {
@@ -110,7 +110,7 @@ struct xendrm_resp {
 
 struct xendrm_pg_flip_evt {
 	uint8_t crtc_idx;
-	uint32_t fb_id;
+	uint64_t fb_cookie;
 } __packed;
 
 struct xendrm_evt {
