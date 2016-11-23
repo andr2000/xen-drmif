@@ -305,15 +305,15 @@
  */
 
 struct xendrm_request {
-	uint8_t raw[16];
+	uint8_t raw[64];
 };
 
 struct xendrm_response {
-	uint8_t raw[16];
+	uint8_t raw[64];
 };
 
 struct xendrm_event {
-	uint8_t raw[16];
+	uint8_t raw[64];
 };
 
 struct xendrm_event_page {
