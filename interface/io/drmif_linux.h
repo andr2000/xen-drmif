@@ -1,4 +1,6 @@
-/*
+/******************************************************************************
+ * drmif_linux.h
+ *
  *  Unified DRM-device I/O interface for Xen guest OSes
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,39 +22,28 @@
  * DEALINGS IN THE SOFTWARE.
  *
  * Copyright (C) 2016 EPAM Systems Inc.
+ *
+ * Authors: Oleksandr Andrushchenko <andr2000@gmail.com>
+ *          Oleksandr Grytsov <al1img@gmail.com>
  */
 
 #ifndef __XEN_PUBLIC_IO_XENSND_LINUX_H__
 #define __XEN_PUBLIC_IO_XENSND_LINUX_H__
 
-#ifdef __KERNEL__
 #include <xen/interface/io/ring.h>
 #include <xen/interface/io/drmif.h>
 #include <xen/interface/grant_table.h>
-#else
-#include "drmif.h"
-#include <xen/io/ring.h>
-#include <xen/grant_table.h>
-#endif
 
-struct xendrm_set_config_req {
-	uint64_t fb_cookie;
-	uint32_t x;
-	uint32_t y;
+struct xendrm_dumb_create_req {
+	uint64_t dumb_cookie;
 	uint32_t width;
 	uint32_t height;
 	uint32_t bpp;
+	grant_ref_t gref_directory_start;
 } __packed;
 
-struct xendrm_page_directory {
-	grant_ref_t gref_dir_next_page;
-	uint32_t num_grefs;
-	grant_ref_t gref[0];
-} __packed;
-
-struct xendrm_page_flip_req {
-	uint8_t crtc_idx;
-	uint64_t fb_cookie;
+struct xendrm_dumb_destroy_req {
+	uint64_t dumb_cookie;
 } __packed;
 
 struct xendrm_fb_create_req {
@@ -67,16 +58,24 @@ struct xendrm_fb_destroy_req {
 	uint64_t fb_cookie;
 } __packed;
 
-struct xendrm_dumb_create_req {
-	uint64_t dumb_cookie;
+struct xendrm_set_config_req {
+	uint64_t fb_cookie;
+	uint32_t x;
+	uint32_t y;
 	uint32_t width;
 	uint32_t height;
 	uint32_t bpp;
-	grant_ref_t gref_directory_start;
 } __packed;
 
-struct xendrm_dumb_destroy_req {
-	uint64_t dumb_cookie;
+struct xendrm_page_flip_req {
+	uint32_t crtc_idx;
+	uint64_t fb_cookie;
+} __packed;
+
+struct xendrm_page_directory {
+	grant_ref_t gref_dir_next_page;
+	uint32_t num_grefs;
+	grant_ref_t gref[0];
 } __packed;
 
 struct xendrm_req {
@@ -85,13 +84,14 @@ struct xendrm_req {
 		struct {
 			uint16_t id;
 			uint8_t operation;
+			uint8_t reserved;
 			union {
-				struct xendrm_page_flip_req pg_flip;
-				struct xendrm_fb_create_req fb_create;
-				struct xendrm_fb_destroy_req fb_destroy;
 				struct xendrm_dumb_create_req dumb_create;
 				struct xendrm_dumb_destroy_req dumb_destroy;
+				struct xendrm_fb_create_req fb_create;
+				struct xendrm_fb_destroy_req fb_destroy;
 				struct xendrm_set_config_req set_config;
+				struct xendrm_page_flip_req pg_flip;
 			} op;
 		} data;
 	} u;
@@ -109,7 +109,7 @@ struct xendrm_resp {
 };
 
 struct xendrm_pg_flip_evt {
-	uint8_t crtc_idx;
+	uint32_t crtc_idx;
 	uint64_t fb_cookie;
 } __packed;
 
@@ -117,7 +117,9 @@ struct xendrm_evt {
 	union {
 		struct xendrm_event raw;
 		struct {
+			uint16_t id;
 			uint8_t type;
+			uint8_t reserved;
 			union {
 				struct xendrm_pg_flip_evt pg_flip;
 			} op;
@@ -128,10 +130,6 @@ struct xendrm_evt {
 DEFINE_RING_TYPES(xen_drmif, struct xendrm_req, struct xendrm_resp);
 
 /* shared page for back to front events */
-
-#ifndef PAGE_SIZE
-#define PAGE_SIZE XC_PAGE_SIZE
-#endif
 
 #define XENDRM_IN_RING_OFFS (sizeof(struct xendrm_event_page))
 #define XENDRM_IN_RING_SIZE (PAGE_SIZE - XENDRM_IN_RING_OFFS)

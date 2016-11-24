@@ -22,6 +22,9 @@
  * DEALINGS IN THE SOFTWARE.
  *
  * Copyright (C) 2016 EPAM Systems Inc.
+ *
+ * Authors: Oleksandr Andrushchenko <andr2000@gmail.com>
+ *          Oleksandr Grytsov <al1img@gmail.com>
  */
 
 #ifndef __XEN_PUBLIC_IO_XENDRM_H__
@@ -61,45 +64,30 @@
  * Indices used to address frontends, driver instances, cards,
  * devices and streams.
  *
- * frontend-id
- *      Values:         <string representing a positive integer>
+ * frontend_id
+ *      Values:         <uint>
  *
  *      Domain ID of the sound frontend.
  *
  * drv_idx
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
- *      Zero based index of the virtualized sound driver instance in
+ *      Zero based contiguous index of the virtualized DRM driver instance in
  *      this domain. Multiple PV drivers are allowed in the domain
  *      at the same time.
  *
- * card_idx
- *      Values:         <string representing a positive integer>
- *
- *      Zero based index of the card within the driver.
- *
  * conn_id
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
- *      Zero based index of the connector within the card.
+ *      Zero based contiguous index of the connector within the card.
  *
  *----------------------------- Connector settings -----------------------------
- * type
- *      Values:         <char[32]>
- *
- *      Type of the connector.
- *
- * id
- *      Values:         <string representing a positive integer>
- *
- *      Unique (within given card instance) ID.
- *      Doesn't have to be zero based and/or be contiguous.
- *
  * resolution
- *      Values:         <width x height>
+ *      Values:         <[width]x[height]>
  *
  *      Width and height for the connector in pixels separated by
- *      XENDRM_LIST_SEPARATOR.
+ *      XENDRM_RESOLUTION_SEPARATOR. For example,
+ *      vdrm/0/connector/0/resolution = "800x600"
  *
  *
  *****************************************************************************
@@ -111,25 +99,25 @@
  * These are per stream.
  *
  * ctrl-channel
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
  *      The identifier of the Xen connector's control event channel
  *      used to signal activity in the ring buffer.
  *
  * ctrl-ring-ref
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
  *      The Xen grant reference granting permission for the backend to map
  *      a sole page in a single page sized connector's control ring buffer.
  *
  * event-channel
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
  *      The identifier of the Xen connector's event channel
  *      used to signal activity in the ring buffer.
  *
  * event-ring-ref
- *      Values:         <string representing a positive integer>
+ *      Values:         <uint>
  *
  *      The Xen grant reference granting permission for the backend to map
  *      a sole page in a single page sized connector's event ring buffer.
@@ -182,17 +170,27 @@
  *              V
  * XenbusStateConnected
  *
+ *                                      XenbusStateUnknown
+ *                                      XenbusStateClosed
+ *                                      XenbusStateClosing
+ * o Remove virtual sound device
+ * o Remove event channels
+ *              |
+ *              |
+ *              V
+ * XenbusStateClosed
+ *
  */
 
 /*
  * REQUEST CODES.
  */
-#define XENDRM_OP_PG_FLIP               0
-#define XENDRM_OP_FB_CREATE             1
-#define XENDRM_OP_FB_DESTROY            2
-#define XENDRM_OP_DUMB_CREATE           3
-#define XENDRM_OP_DUMB_DESTROY          4
-#define XENDRM_OP_SET_CONFIG            5
+#define XENDRM_OP_DUMB_CREATE           0
+#define XENDRM_OP_DUMB_DESTROY          1
+#define XENDRM_OP_FB_CREATE             2
+#define XENDRM_OP_FB_DESTROY            3
+#define XENDRM_OP_SET_CONFIG            4
+#define XENDRM_OP_PG_FLIP               5
 
 /*
  * EVENT CODES.
@@ -204,14 +202,12 @@
  */
 #define XENDRM_DRIVER_NAME                   "vdrm"
 
-#define XENDRM_LIST_SEPARATOR                "x"
+#define XENDRM_RESOLUTION_SEPARATOR          "x"
 /* Field names */
 #define XENDRM_FIELD_CTRL_RING_REF           "ctrl-ring-ref"
 #define XENDRM_FIELD_CTRL_CHANNEL            "ctrl-channel"
 #define XENDRM_FIELD_EVT_RING_REF            "event-ring-ref"
 #define XENDRM_FIELD_EVT_CHANNEL             "event-channel"
-#define XENDRM_FIELD_TYPE                    "type"
-#define XENDRM_FIELD_ID                      "id"
 #define XENDRM_FIELD_RESOLUTION              "resolution"
 
 /*
@@ -232,38 +228,53 @@
  * each other using a shared page and an event channel.
  * Shared page contains a ring with request/response packets.
  *
+ *****************************************************************************
+ *                            Frontend to backend requests
+ *****************************************************************************
  *
- * All request packets have the same length (16 octets)
+ * All request packets have the same length (64 octets)
  *
  *
- * Request open - open a XXX
+ * Request dumb creation - request creation of a DRM dumb buffer.
  *          0                 1                  2                3        octet
  * +-----------------+-----------------+-----------------+-----------------+
- * |                 id                |    operation    |     stream_idx  |
+ * |                 id                |    operation    |     reserved    |
  * +-----------------+-----------------+-----------------+-----------------+
- * |                                pcm_rate                               |
+ * |                         dumb_cookie low 32-bit                        |
  * +-----------------+-----------------+-----------------+-----------------+
- * |  pcm_format     |  pcm_channels   |             reserved              |
+ * |                         dumb_cookie high 32-bit                       |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 width                                 |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 height                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                  bpp                                  |
  * +-----------------+-----------------+-----------------+-----------------+
  * |                         gref_directory_start                          |
  * +-----------------+-----------------+-----------------+-----------------+
-
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
  * id - uint16_t, private guest value, echoed in response
- * operation - uint8_t, XENDRM_OP_OPEN
- * stream_idx - uint8_t, index of the stream ("streams_idx" XenStore entry
- *   of the stream)
- * pcm_rate - uint32_t, stream data rate, Hz
- * pcm_format - uint8_t, XENDRM_PCM_FORMAT_XXX value
- * pcm_channels - uint8_t, number of channels of this stream
+ * operation - uint8_t, XENDRM_OP_DUMB_CREATE
+ * dumb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote dumb to local in requests
+ * width - uint32_t, width in pixels
+ * height - uint32_t, height in pixels
+ * bpp - uint32_t, bits per pixel
  * gref_directory_start - grant_ref_t, a reference to the first shared page
  *   describing shared buffer references. At least one page exists. If shared
  *   buffer size exceeds what can be addressed by this single page, then
  *   reference to the next page must be supplied (gref_dir_next_page below
  *   is not NULL)
  *
- * Shared page for XENDRM_OP_OPEN buffer descriptor (gref_directory in the
- *   request) employs a list of pages, describing all pages of the shared data
- *   buffer:
+ * Shared page for XENDRM_OP_DUMB_CREATE buffer descriptor (gref_directory in
+ *   the request) employs a list of pages, describing all pages of the shared
+ *   data buffer:
  *          0                 1                  2                3        octet
  * +-----------------+-----------------+-----------------+-----------------+
  * |                          gref_dir_next_page                           |
@@ -274,7 +285,7 @@
  * +-----------------+-----------------+-----------------+-----------------+
  * |                                gref[1]                                |
  * +-----------------+-----------------+-----------------+-----------------+
- * +/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
  * +-----------------+-----------------+-----------------+-----------------+
  * |                                gref[N -1]                             |
  * +-----------------+-----------------+-----------------+-----------------+
@@ -282,25 +293,187 @@
  * gref_dir_next_page - grant_ref_t, reference to the next page describing
  *   page directory
  * num_grefs - number of grefs in this page
- * gref[i] - grant_ref_t, reference to a shared page of the buffer
- *   allocated at XENDRM_OP_OPEN
+ * gref[i] - grant_ref_t, reference to a shared page of the dumb buffer
+ *   allocated at XENDRM_OP_DUMB_CREATE
  *
- * Request close - close an opened pcm stream:
+ *
+ * Request dumb destruction - destroy a previously allocated dumb buffer:
  *          0                 1                  2                3        octet
  * +-----------------+-----------------+-----------------+-----------------+
- * |                 id                |    operation    |     stream_idx  |
+ * |                 id                |    operation    |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                         dumb_cookie low 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                         dumb_cookie high 32-bit                       |
  * +-----------------+-----------------+-----------------+-----------------+
  * |                               reserved                                |
  * +-----------------+-----------------+-----------------+-----------------+
- * |                               reserved                                |
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
  * +-----------------+-----------------+-----------------+-----------------+
  * |                               reserved                                |
  * +-----------------+-----------------+-----------------+-----------------+
  *
  * id - uint16_t, private guest value, echoed in response
- * operation - uint8_t, XENDRM_OP_CLOSE
- * stream_idx - uint8_t, index of the stream ("streams_idx" XenStore entry
- *   of the stream)
+ * operation - uint8_t, XENDRM_OP_DUMB_DESTROY
+ * dumb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote dumb to local in requests
+ *
+ *
+ * Request framebuffer creation - request creation of a DRM framebuffer.
+ *          0                 1                  2                3        octet
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                 id                |    operation    |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                         dumb_cookie low 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                         dumb_cookie high 32-bit                       |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie low 32-bit                         |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie high 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 width                                 |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 height                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                              pixel_format                             |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
+ * id - uint16_t, private guest value, echoed in response
+ * operation - uint8_t, XENDRM_OP_FB_CREATE
+ * dumb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote dumb to local in requests
+ * fb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote framebuffer to local in requests
+ * width - uint32_t, width in pixels
+ * height - uint32_t, height in pixels
+ * pixel_format - uint32_t, pixel format of the framebuffer
+ *
+ *
+ * Request framebuffer destruction - destroy a previously
+ *   allocated framebuffer buffer:
+ *          0                 1                  2                3        octet
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                 id                |    operation    |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie low 32-bit                         |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie high 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
+ * id - uint16_t, private guest value, echoed in response
+ * operation - uint8_t, XENDRM_OP_FB_DESTROY
+ * dumb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote dumb to local in requests
+ *
+ *
+ * Request configuration set/reset - request to set or reset
+ *   the configuration/mode on CRTC:
+ *          0                 1                  2                3        octet
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                 id                |    operation    |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie low 32-bit                         |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie high 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                   x                                   |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                   y                                   |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 width                                 |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 height                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                  bpp                                  |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
+ * id - uint16_t, private guest value, echoed in response
+ * operation - uint8_t, XENDRM_OP_SET_CONFIG
+ * fb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote framebuffer to local in requests
+ * x - uint32_t, starting position in pixels by X axis
+ * y - uint32_t, starting position in pixels by Y axis
+ * width - uint32_t, width in pixels
+ * height - uint32_t, height in pixels
+ * bpp - uint32_t, bits per pixel
+ *
+ *
+ * Request page flip - request to flip a page identified by the framebuffer
+ *   cookie:
+ *          0                 1                  2                3        octet
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                 id                |    operation    |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 crtc_idx                              |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie low 32-bit                         |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie high 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
+ * id - uint16_t, private guest value, echoed in response
+ * operation - uint8_t, XENDRM_OP_PG_FLIP
+ * crtc_idx - uint32_t, private guest value, echoed in response by the back
+ * fb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote framebuffer to local in requests
+ *
+ *****************************************************************************
+ *                            Backend to frontend events
+ *****************************************************************************
+ *
+ * All event packets have the same length (64 octets)
+ * Events are sent via a shared page allocated by the front and propagated by
+ *   event-channel/event-ring-ref XenStore entries
+ *
+ *
+ * Page flip complete event - event from back to front on page flip completed:
+ *          0                 1                  2                3        octet
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                 id                |      type       |     reserved    |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                                 crtc_idx                              |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie low 32-bit                         |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                          fb_cookie high 32-bit                        |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/|
+ * +-----------------+-----------------+-----------------+-----------------+
+ * |                               reserved                                |
+ * +-----------------+-----------------+-----------------+-----------------+
+ *
+ * id - uint16_t, event id, may be used by front
+ * type - uint8_t, XENDRM_EVT_PG_FLIP
+ * crtc_idx - uint32_t, echoed value received in XENDRM_OP_PG_FLIP request
+ * fb_cookie - uint64_t, unique to guest domain value used by the backend
+ *   to map remote framebuffer to local in requests
  *
  */
 
@@ -318,7 +491,7 @@ struct xendrm_event {
 
 struct xendrm_event_page {
 	union {
-		uint8_t pad[16];
+		struct xendrm_event raw;
 		struct {
 			uint32_t in_cons;
 			uint32_t in_prod;
